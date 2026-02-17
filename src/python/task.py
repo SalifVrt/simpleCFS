@@ -1,7 +1,7 @@
-"""Task representation for SimpleCFS"""
+"""Task representation for simpleCFS"""
 
 class Task:
-    def __init__(self, task_id: str, task_nice: int, arrival_time: float, bursts: list[tuple[float, int]]):
+    def __init__(self, task_id: str, arrival_time: float, task_nice: int, bursts: list[tuple[float, int]]):
         self.id: str = task_id
         self.nice: int = task_nice
         self.vruntime: float = 0.0
