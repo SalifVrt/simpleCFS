@@ -2,4 +2,7 @@
 
 
 class CFSEngine:
-    pass
+    
+
+    def run(self):
+        pass
