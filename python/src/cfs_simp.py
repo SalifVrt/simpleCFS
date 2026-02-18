@@ -1,8 +1,8 @@
 #import numpy as np
 #import utils
 
-MIN_GRANULARITY = 0.75  #granularité minimale
-L = 6.0   #période d'ordonnancement
+MIN_GRANULARITY = 0.75  #minimal granularity
+L = 6.0   #scheduler latency
 PRIO_TO_WEIGHT = [88761, 71755, 56483, 46273, 36291, 29154, 23254, 18705, 14949, 11916,
                   9548, 7620, 6100, 4904, 3906,
                   3121, 2501, 1991, 1586, 1277,
