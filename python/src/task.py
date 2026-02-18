@@ -13,8 +13,9 @@ class Task:
         self.vruntime: float = 0.0
         self.state: (None | str) = None
         self.arrival_time = arrival_time
-        self.bursts = bursts #burst ex: ("CPU", 9)
+        self.bursts = bursts    #burst ex: ("CPU", 9)
         self.current_burst: int = 0
+        self.exec_time = 0.0    #cumulative time on CPU
 
     def is_finished(self):
         return self.current_burst == len(self.bursts)

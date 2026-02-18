@@ -15,9 +15,9 @@ class CFSCalculator:
         slice = map(lambda x: self.L*x//tot_weight, rqueue.tasks)
         return list(slice)
 
-    def update_vruntime(self, rqueue: runqueue.Runqueue, passed_time:float) -> None:
+    def update_vruntime(self, rqueue: runqueue.Runqueue) -> None:
         """Update the vruntime of each task in the runqueue."""
 
         for t in rqueue.tasks:
-            t.vruntime = max(self.MIN_GRANULARITY, passed_time*self.NICE_0_WEIGTH/t.get_task_weight())
+            t.vruntime = max(self.MIN_GRANULARITY, t.exec_time*self.NICE_0_WEIGTH/t.get_task_weight())
 
