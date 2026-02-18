@@ -45,14 +45,14 @@ class TestFormatTask:
 class TestFileToTasks:
     """Tests for utils.file_to_tasks() function"""
     
-    def test_file_to_tasks_reads_correct_number_of_tasks(self, td1_path):
+    def test_file_to_tasks_reads_correct_number_of_tasks(self, fpath):
         """Test that correct number of tasks are read from file"""
-        tasks = utils.file_to_tasks(td1_path)
+        tasks = utils.file_to_tasks(fpath)
         assert len(tasks) == 4  # td1.txt has 4 tasks
     
-    def test_file_to_tasks_formats_correctly(self, td1_path):
+    def test_file_to_tasks_formats_correctly(self, fpath):
         """Test that tasks are formatted correctly from file"""
-        tasks = utils.file_to_tasks(td1_path)
+        tasks = utils.file_to_tasks(fpath)
         
         # Check first task (A)
         assert tasks[0][0] == "A"
@@ -62,9 +62,9 @@ class TestFileToTasks:
         assert tasks[0][3][0] == ("CPU", 1)
         assert tasks[0][3][1] == ("IO", 8)
     
-    def test_file_to_tasks_parses_bursts_as_tuples(self, td1_path):
+    def test_file_to_tasks_parses_bursts_as_tuples(self, fpath):
         """Test that all bursts are tuples with proper labels"""
-        tasks = utils.file_to_tasks(td1_path)
+        tasks = utils.file_to_tasks(fpath)
         
         for task in tasks:
             bursts = task[3]

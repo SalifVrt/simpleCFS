@@ -81,9 +81,9 @@ class TestTaskIsFinished:
 class TestTaskIntegration:
     """Integration tests with formatted tasks from file"""
     
-    def test_task_from_formatted_data(self, td1_path):
+    def test_task_from_formatted_data(self, fpath):
         """Test creating Task objects from formatted task data"""
-        tasks_data = utils.file_to_tasks(td1_path)
+        tasks_data = utils.file_to_tasks(fpath)
         
         # Create task from first formatted task
         task_data = tasks_data[0]
@@ -95,9 +95,9 @@ class TestTaskIntegration:
         assert len(t.bursts) == 4
         assert t.is_finished() is False
     
-    def test_task_burst_execution_simulation(self, td1_path):
+    def test_task_burst_execution_simulation(self, fpath):
         """Test simulating task burst execution"""
-        tasks_data = utils.file_to_tasks(td1_path)
+        tasks_data = utils.file_to_tasks(fpath)
         task_data = tasks_data[1]  # Task B
         t = task.Task(task_data[0], int(task_data[1]), int(task_data[2]), task_data[3])
         
