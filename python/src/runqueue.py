@@ -1,6 +1,5 @@
 """Runqueue implementation for simpleCFS"""
 
-from operator import attrgetter
 from . import task
 
 class Runqueue:
