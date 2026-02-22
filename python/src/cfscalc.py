@@ -1,6 +1,7 @@
 """Logic part for simpleCFS."""
 
 from . import runqueue
+from . import task
 
 class CFSCalculator:
     L = 6.0   #scheduler latency
@@ -8,12 +9,12 @@ class CFSCalculator:
     NICE_0_WEIGTH = 1024
 
 
-    def calc_cur_time_slice(self, rqueue: runqueue.Runqueue) -> list:
-        """Calculate the time slice for each task in the runqueue."""
+    def calc_cur_time_slice(self, rqueue: runqueue.Runqueue, task: task.Task) -> float:
+        """Calculate the time slice for a task in the runqueue."""
 
         tot_weight = rqueue.get_total_weight_from_queue()
-        slice = map(lambda t: self.L*t.get_task_weight()/tot_weight, rqueue.tasks)
-        return list(slice)
+        slice = task.get_task_weight()/tot_weight
+        return slice
 
     def update_vruntime(self, rqueue: runqueue.Runqueue) -> None:
         """Update the vruntime of each task in the runqueue."""
