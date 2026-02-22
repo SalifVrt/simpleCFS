@@ -1,12 +1,18 @@
+PYTHON = uv run
+
 .PHONY: test run clean sync
 
+install:
+	@echo "Starting project install..."
+	uv pip install -e .
+
 test:
-	@echo "🧪 Lancement des tests..."
-	uv run pytest
+	@echo "🧪 Starting tests..."
+	$(PYTHON) pytest
 
 run:
-	@echo "🚀 Lancement de la simulation CFS..."
-	uv run src/cfs_scheduler/main.py
+	@echo "🚀 Starting CFS..."
+	$(PYTHON) scfs
 
 clean:
 	rm -rf .pytest_cache
