@@ -13,7 +13,7 @@ class CFSCalculator:
         """Calculate the time slice for a task in the runqueue."""
 
         tot_weight = rqueue.get_total_weight_from_queue()
-        slice = task.get_task_weight()/tot_weight
+        slice = self.L*task.get_task_weight()/tot_weight
         return slice
 
     def update_vruntime(self, rqueue: runqueue.Runqueue) -> None:
