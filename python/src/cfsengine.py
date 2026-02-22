@@ -11,3 +11,7 @@ class CFSEngine:
 
     def run(self):
         pass
+
+
+def main():
+    pass
