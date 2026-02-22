@@ -25,3 +25,6 @@ def file_to_tasks(filename: str) -> list:
         f_lines.append(format_task(str_to_int_line))
 
     return f_lines
+
+def log_state(current_time, task, event):
+    print(f"[{current_time:04d}] {event:10} | ID: {task.id} | vruntime: {task.vruntime:.2f}")
