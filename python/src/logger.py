@@ -36,7 +36,7 @@ class CFSLogger:
         self._write(f"{'SIMULATION FINISHED - STATS':^85}")
         self._write("="*85)
 
-        header = f"| {'ID':<4} | {'Arrival':<7} | {'End':<9} | {'Turnaround':<9} | {'Waiting':<9} | {'CPU Tot':<7} | {'IO Tot':<7} |"
+        header = f"| {'ID':<4} | {'Arrival':<7} | {'End':<9} | {'Response Time':<9} | {'Turnaround':<9} | {'Waiting':<9} | {'CPU Tot':<7} | {'IO Tot':<7} |"
         self._write(header)
         self._write("-" * 85)
 
@@ -64,7 +64,10 @@ class CFSLogger:
             total_waiting += waiting
             total_cpu_time += cpu_needed
 
-            line = f"| {t.id:<4} | {t.arrival_time:<7.2f} | {t.end_time:<9.2f} | {turnaround:<10.2f} | {waiting:<9.2f} | {cpu_needed:<7.2f} | {io_needed:<7.2f} |"
+            start_t = t.start_time if t.start_time is not None else t.arrival_time
+            response_time = start_t - t.arrival_time
+
+            line = f"| {t.id:<4} | {t.arrival_time:<7.2f} | {t.end_time:<9.2f} | {response_time:<13.2f} | {turnaround:<10.2f} | {waiting:<9.2f} | {cpu_needed:<7.2f} | {io_needed:<7.2f} |"
             self._write(line)
 
         self._write("-" * 85)

@@ -125,6 +125,11 @@ class CFSEngine:
                 
                 if next_task:
                     self.current_task = next_task
+                    
+                    #for metrics
+                    if self.current_task.start_time is None:
+                        self.current_task.start_time = self.time
+                    
                     cur_task_time_slice = self.logic.calc_cur_time_slice(self.rqueue, self.current_task)
                     self.allocated_cpu_time = min(cur_task_time_slice, self.current_task.time_left_cur_burst)
                     self.cpu_stop_time = self.time + self.allocated_cpu_time
