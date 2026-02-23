@@ -130,3 +130,5 @@ make clean   # removes .pytest_cache and __pycache__ directories
 
 - [CFS Scheduler — Linux kernel documentation](https://www.kernel.org/doc/html/latest/scheduler/sched-design-CFS.html)
 - [Completely Fair Scheduler — Wikipedia](https://en.wikipedia.org/wiki/Completely_Fair_Scheduler)
+
+[Repository link](https://github.com/SalifVrt/simpleCFS)
