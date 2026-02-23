@@ -29,3 +29,9 @@ class CFSLogger:
                 f.write(message + '\n')
         else:
             print(message)
+
+    def print_summary(self, tasks):
+        """Shows the simulation summary."""
+        self._write("\n" + "="*50)
+        self._write("SIMULATION TERMINEE - STATISTIQUES")
+        self._write("="*50)
