@@ -24,4 +24,8 @@ class CFSLogger:
 
     def _write(self, message: str):
         """Manages the output (CLI or file)."""
-        pass
+        if self.output_file:
+            with open(self.output_file, 'a') as f: #to add at the end of the file
+                f.write(message + '\n')
+        else:
+            print(message)
