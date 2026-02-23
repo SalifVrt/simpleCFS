@@ -12,7 +12,7 @@ test:
 
 run:
 	@echo "🚀 Starting CFS..."
-	$(PYTHON) scfs
+	$(PYTHON) scfs $(FILE)
 
 clean:
 	rm -rf .pytest_cache
