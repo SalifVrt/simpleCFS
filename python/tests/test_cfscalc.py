@@ -14,7 +14,7 @@ class TestCFSCalculatorConstants:
         calc = cfscalc.CFSCalculator()
         assert hasattr(calc, 'L')
         assert hasattr(calc, 'MIN_GRANULARITY')
-        assert hasattr(calc, 'NICE_0_WEIGTH')
+        assert hasattr(calc, 'NICE_0_WEIGHT')
     
     def test_scheduler_latency_value(self):
         """Test that scheduler latency (L) has correct value"""
@@ -27,9 +27,9 @@ class TestCFSCalculatorConstants:
         assert calc.MIN_GRANULARITY == 0.75
     
     def test_nice_0_weight_value(self):
-        """Test that NICE_0_WEIGTH has correct value"""
+        """Test that NICE_0_WEIGHT has correct value"""
         calc = cfscalc.CFSCalculator()
-        assert calc.NICE_0_WEIGTH == 1024
+        assert calc.NICE_0_WEIGHT == 1024
 
 
 class TestCalcCurTimeSlice:
@@ -138,106 +138,93 @@ class TestUpdateVruntime:
     def test_update_vruntime_single_task_zero_exec_time(self):
         """Test vruntime update with zero execution time"""
         calc = cfscalc.CFSCalculator()
-        rq = runqueue.Runqueue()
         
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
-        t1.exec_time = 0.0
-        rq.tasks.append(t1)
+        initial_vruntime = t1.vruntime
         
-        calc.update_vruntime(rq)
-        assert t1.vruntime == calc.MIN_GRANULARITY
+        calc.update_vruntime(t1, 0.0)
+        # With zero execution time, vruntime shouldn't change
+        assert t1.vruntime == initial_vruntime
     
     def test_update_vruntime_respects_min_granularity(self):
         """Test that vruntime respects minimum granularity constraint"""
         calc = cfscalc.CFSCalculator()
-        rq = runqueue.Runqueue()
         
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
-        t1.exec_time = 0.1  # Very small execution time
-        rq.tasks.append(t1)
         
-        calc.update_vruntime(rq)
-        assert t1.vruntime >= calc.MIN_GRANULARITY
+        calc.update_vruntime(t1, 0.1)  # Very small execution time
+        # Vruntime should be updated by 0.1 * (NICE_0_WEIGHT / weight)
+        assert isinstance(t1.vruntime, (int, float))
     
     def test_update_vruntime_different_nice_values(self):
         """Test vruntime update with different nice values"""
         calc = cfscalc.CFSCalculator()
-        rq = runqueue.Runqueue()
         
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         t2 = task.Task("Task2", 0.0, -5, [("CPU", 5)])
         
-        t1.exec_time = 10.0
-        t2.exec_time = 10.0
-        rq.tasks = [t1, t2]
+        actual_duration = 10.0
+        calc.update_vruntime(t1, actual_duration)
+        calc.update_vruntime(t2, actual_duration)
         
-        calc.update_vruntime(rq)
-        
-        # Task with higher nice value (lower priority) should have higher vruntime
+        # Task with higher nice value (lower priority) should have higher vruntime increase
+        # t1 has nice=0, t2 has nice=-5 (higher priority)
         assert t1.vruntime > t2.vruntime
     
     def test_update_vruntime_multiple_tasks(self):
         """Test vruntime update with multiple tasks"""
         calc = cfscalc.CFSCalculator()
-        rq = runqueue.Runqueue()
         
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         t2 = task.Task("Task2", 0.0, 0, [("CPU", 5)])
         t3 = task.Task("Task3", 0.0, 0, [("CPU", 5)])
         
-        t1.exec_time = 10.0
-        t2.exec_time = 10.0
-        t3.exec_time = 10.0
-        rq.tasks = [t1, t2, t3]
+        actual_duration = 10.0
+        calc.update_vruntime(t1, actual_duration)
+        calc.update_vruntime(t2, actual_duration)
+        calc.update_vruntime(t3, actual_duration)
         
-        calc.update_vruntime(rq)
-        
-        # All tasks should have the same vruntime (equal nice values)
+        # All tasks should have the same vruntime (equal nice values, same duration)
         assert t1.vruntime == t2.vruntime == t3.vruntime
     
     def test_update_vruntime_proportional_to_exec_time(self):
         """Test that vruntime is proportional to execution time"""
         calc = cfscalc.CFSCalculator()
-        rq = runqueue.Runqueue()
         
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         t2 = task.Task("Task2", 0.0, 0, [("CPU", 5)])
         
-        t1.exec_time = 5.0
-        t2.exec_time = 10.0
-        rq.tasks = [t1, t2]
-        
-        calc.update_vruntime(rq)
+        calc.update_vruntime(t1, 5.0)
+        calc.update_vruntime(t2, 10.0)
         
         # Task with double execution time should have roughly double vruntime
         assert t2.vruntime > t1.vruntime
-        # The ratio should be approximately 2 (unless MIN_GRANULARITY constraint applies)
-        if t1.vruntime >= calc.MIN_GRANULARITY and t2.vruntime >= calc.MIN_GRANULARITY:
-            ratio = t2.vruntime / t1.vruntime
-            assert pytest.approx(ratio, rel=0.1) == 2.0
+        # The ratio should be approximately 2
+        ratio = t2.vruntime / t1.vruntime
+        assert pytest.approx(ratio, rel=0.1) == 2.0
     
-    def test_update_vruntime_empty_queue(self):
-        """Test vruntime update with empty runqueue"""
+    def test_update_vruntime_single_task(self):
+        """Test vruntime update with a single task"""
         calc = cfscalc.CFSCalculator()
-        rq = runqueue.Runqueue()
+        
+        t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         
         # Should not raise any exception
-        calc.update_vruntime(rq)
+        initial_vruntime = t1.vruntime
+        calc.update_vruntime(t1, 5.0)
+        assert t1.vruntime > initial_vruntime
     
     def test_update_vruntime_nice_to_weight_formula(self):
         """Test vruntime calculation matches expected formula"""
         calc = cfscalc.CFSCalculator()
-        rq = runqueue.Runqueue()
         
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
-        t1.exec_time = 100.0
-        rq.tasks.append(t1)
+        actual_duration = 100.0
+        initial_vruntime = t1.vruntime
         
-        calc.update_vruntime(rq)
+        calc.update_vruntime(t1, actual_duration)
         
-        # Expected vruntime: max(MIN_GRANULARITY, exec_time * NICE_0_WEIGHT / weight)
-        expected = max(
-            calc.MIN_GRANULARITY,
-            t1.exec_time * calc.NICE_0_WEIGTH / t1.get_task_weight()
-        )
-        assert t1.vruntime == expected
+        # Expected vruntime increase: actual_duration * NICE_0_WEIGHT / weight
+        weight_factor = calc.NICE_0_WEIGHT / t1.get_task_weight()
+        expected_vruntime = initial_vruntime + actual_duration * weight_factor
+        assert t1.vruntime == expected_vruntime

@@ -96,16 +96,16 @@ class TestPickNextTask:
         assert result is None
     
     def test_pick_next_task_single_task(self):
-        """Test pick_next_task returns index of single task"""
+        """Test pick_next_task returns single task"""
         rq = runqueue.Runqueue()
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         rq.tasks.append(t1)
         
         result = rq.pick_next_task()
-        assert result == 0
+        assert result == t1
     
     def test_pick_next_task_multiple_tasks(self):
-        """Test pick_next_task returns index of task with minimum vruntime"""
+        """Test pick_next_task returns task with minimum vruntime"""
         rq = runqueue.Runqueue()
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         t2 = task.Task("Task2", 0.0, 0, [("CPU", 5)])
@@ -118,16 +118,16 @@ class TestPickNextTask:
         rq.tasks = [t1, t2, t3]
         
         result = rq.pick_next_task()
-        assert result == 1  # t2 has minimum vruntime
+        assert result == t2  # t2 has minimum vruntime
     
     def test_pick_next_task_returns_correct_type(self):
-        """Test pick_next_task returns an integer index"""
+        """Test pick_next_task returns a Task object"""
         rq = runqueue.Runqueue()
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         rq.tasks.append(t1)
         
         result = rq.pick_next_task()
-        assert isinstance(result, int)
+        assert isinstance(result, task.Task)
     
     def test_pick_next_task_zero_vruntime(self):
         """Test pick_next_task with all tasks having zero vruntime"""
@@ -138,14 +138,14 @@ class TestPickNextTask:
         rq.tasks = [t1, t2]
         
         result = rq.pick_next_task()
-        assert result == 0  # Should return first one
+        assert result == t1  # Should return first one
 
 
 class TestRunqueueIntegration:
     """Integration tests for Runqueue methods"""
     
     def test_get_min_and_pick_next_task_consistency(self):
-        """Test that pick_next_task index matches get_min_vruntime index"""
+        """Test that pick_next_task matches get_min_vruntime task"""
         rq = runqueue.Runqueue()
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         t2 = task.Task("Task2", 0.0, 0, [("CPU", 5)])
@@ -161,4 +161,4 @@ class TestRunqueueIntegration:
         pick_result = rq.pick_next_task()
         
         if min_result:
-            assert min_result[0] == pick_result
+            assert min_result[1] == pick_result
