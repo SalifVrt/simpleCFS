@@ -12,7 +12,7 @@ The scheduler aims to give every task a fair share of CPU time, weighted by prio
 
 ---
 
-## Simplifications vs. Linux CFS
+## simpleCFS vs. Linux CFS
 
 | Feature | Linux CFS | simpleCFS |
 |---|---|---|
@@ -101,7 +101,7 @@ make sync      # uv sync (lock file)
 make run FILE=<your_input_file>
 ```
 
-The `FILE` argument is passed directly to the `scfs` command:
+The `FILE` argument is passed directly to the `scfs` command (switch to default file if no file is specified):
 
 ```bash
 # Example
