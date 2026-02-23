@@ -7,11 +7,11 @@ install:
 	uv pip install -e .
 
 test:
-	@echo "🧪 Starting tests..."
+	@echo "Starting tests..."
 	$(PYTHON) pytest
 
 run:
-	@echo "🚀 Starting CFS..."
+	@echo "Starting CFS..."
 	$(PYTHON) scfs $(FILE)
 
 clean:
@@ -20,3 +20,6 @@ clean:
 
 sync:
 	uv sync
+
+help:
+	@echo
