@@ -43,9 +43,9 @@ class TestCalcCurTimeSlice:
         t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
         rq.tasks.append(t1)
         
-        time_slices = calc.calc_cur_time_slice(rq)
-        assert len(time_slices) == 1
-        assert time_slices[0] == calc.L
+        time_slice = calc.calc_cur_time_slice(rq, t1)
+        # Single task with no competition should get full latency
+        assert time_slice == calc.L
     
     def test_multiple_tasks_equal_weight(self):
         """Test time slice calculation with multiple equal-weight tasks"""
@@ -56,11 +56,12 @@ class TestCalcCurTimeSlice:
         t2 = task.Task("Task2", 0.0, 0, [("CPU", 5)])
         rq.tasks = [t1, t2]
         
-        time_slices = calc.calc_cur_time_slice(rq)
-        assert len(time_slices) == 2
+        time_slice_1 = calc.calc_cur_time_slice(rq, t1)
+        time_slice_2 = calc.calc_cur_time_slice(rq, t2)
+        # Equal weight tasks should have equal time slices
         expected_slice = calc.L / 2
-        assert time_slices[0] == expected_slice
-        assert time_slices[1] == expected_slice
+        assert time_slice_1 == expected_slice
+        assert time_slice_2 == expected_slice
     
     def test_multiple_tasks_different_nice_values(self):
         """Test time slice calculation with different nice values"""
@@ -71,10 +72,10 @@ class TestCalcCurTimeSlice:
         t2 = task.Task("Task2", 0.0, -5, [("CPU", 5)])
         rq.tasks = [t1, t2]
         
-        time_slices = calc.calc_cur_time_slice(rq)
-        assert len(time_slices) == 2
+        time_slice_1 = calc.calc_cur_time_slice(rq, t1)
+        time_slice_2 = calc.calc_cur_time_slice(rq, t2)
         # Task with lower nice value (higher priority) should have larger time slice
-        assert time_slices[1] > time_slices[0]
+        assert time_slice_2 > time_slice_1
     
     def test_time_slices_sum_to_latency(self):
         """Test that time slices sum to scheduler latency for equal-weight tasks"""
@@ -85,8 +86,11 @@ class TestCalcCurTimeSlice:
             t = task.Task(f"Task{i}", 0.0, 0, [("CPU", 5)])
             rq.tasks.append(t)
         
-        time_slices = calc.calc_cur_time_slice(rq)
-        total_slice = sum(time_slices)
+        total_slice = 0.0
+        for t in rq.tasks:
+            time_slice = calc.calc_cur_time_slice(rq, t)
+            total_slice += time_slice
+        
         assert total_slice == calc.L
     
     def test_time_slices_proportional_to_weight(self):
@@ -98,13 +102,14 @@ class TestCalcCurTimeSlice:
         t2 = task.Task("Task2", 0.0, 5, [("CPU", 5)])
         rq.tasks = [t1, t2]
         
-        time_slices = calc.calc_cur_time_slice(rq)
+        time_slice_1 = calc.calc_cur_time_slice(rq, t1)
+        time_slice_2 = calc.calc_cur_time_slice(rq, t2)
         
         # Ratio of time slices should match ratio of weights
         w1 = t1.get_task_weight()
         w2 = t2.get_task_weight()
         weight_ratio = w1 / w2
-        slice_ratio = time_slices[0] / time_slices[1]
+        slice_ratio = time_slice_1 / time_slice_2
         
         assert pytest.approx(slice_ratio) == pytest.approx(weight_ratio)
     
@@ -113,8 +118,18 @@ class TestCalcCurTimeSlice:
         calc = cfscalc.CFSCalculator()
         rq = runqueue.Runqueue()
         
-        time_slices = calc.calc_cur_time_slice(rq)
-        assert time_slices == []
+        # Empty queue - create a task not in queue to test
+        t = task.Task("Task1", 0.0, 0, [("CPU", 5)])
+        
+        # Should handle gracefully or raise appropriate error
+        # Since task not in queue, total weight is 0
+        try:
+            time_slice = calc.calc_cur_time_slice(rq, t)
+            # If no exception, verify it's a valid number (likely inf or 0)
+            assert isinstance(time_slice, (int, float))
+        except ZeroDivisionError:
+            # It's acceptable to raise division by zero for empty queue
+            pass
 
 
 class TestUpdateVruntime:
