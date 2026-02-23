@@ -31,7 +31,54 @@ class CFSLogger:
             print(message)
 
     def print_summary(self, tasks):
-        """Shows the simulation summary."""
-        self._write("\n" + "="*50)
-        self._write("SIMULATION TERMINEE - STATISTIQUES")
-        self._write("="*50)
+        """Shows the simulation summary with metrics."""
+        self._write("\n" + "="*85)
+        self._write(f"{'SIMULATION FINISHED - STATS':^85}")
+        self._write("="*85)
+
+        header = f"| {'ID':<4} | {'Arrival':<7} | {'End':<9} | {'Turnaround':<9} | {'Waiting':<9} | {'CPU Tot':<7} | {'IO Tot':<7} |"
+        self._write(header)
+        self._write("-" * 85)
+
+        total_turnaround = 0
+        total_waiting = 0
+        total_cpu_time = 0
+        
+        #avoid dividing by 0
+        if not tasks:
+            self._write("No task to show.")
+            return
+
+        for t in tasks:
+            turnaround = t.end_time - t.arrival_time
+            
+            cpu_needed = sum(b[1] for b in t.bursts if b[0] == "CPU")
+            io_needed = sum(b[1] for b in t.bursts if b[0] == "IO")
+            
+            #waiting
+            waiting = turnaround - (cpu_needed + io_needed)
+            
+            if waiting < 0: waiting = 0.0
+
+            total_turnaround += turnaround
+            total_waiting += waiting
+            total_cpu_time += cpu_needed
+
+            line = f"| {t.id:<4} | {t.arrival_time:<7.2f} | {t.end_time:<9.2f} | {turnaround:<10.2f} | {waiting:<9.2f} | {cpu_needed:<7.2f} | {io_needed:<7.2f} |"
+            self._write(line)
+
+        self._write("-" * 85)
+
+        #average
+        n = len(tasks)
+        avg_turnaround = total_turnaround / n
+        avg_waiting = total_waiting / n
+        
+        #simulation end
+        simulation_end_time = max(t.end_time for t in tasks) if tasks else 0
+        cpu_utilization = (total_cpu_time / simulation_end_time * 100) if simulation_end_time > 0 else 0
+
+        self._write(f"Average Turnaround : {avg_turnaround:.2f} ms")
+        self._write(f"Average Waiting Time   : {avg_waiting:.2f} ms")
+        self._write(f"Average CPU Use  : {cpu_utilization:.2f} %")
+        self._write("="*85)

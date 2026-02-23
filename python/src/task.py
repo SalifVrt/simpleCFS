@@ -15,7 +15,9 @@ class Task:
         self.arrival_time = arrival_time
         self.bursts = bursts    #burst ex: ("CPU", 9)
         self.current_burst: int = 0
+        self.time_left_cur_burst = self.bursts[0][1] if self.bursts else 0.0
         self.exec_time = 0.0    #cumulative time on CPU
+        self.end_time = 0.0 #for logs
 
     def is_finished(self):
         return self.current_burst == len(self.bursts)

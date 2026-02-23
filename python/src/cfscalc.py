@@ -4,21 +4,30 @@ from . import runqueue
 from . import task
 
 class CFSCalculator:
-    L = 6.0   #scheduler latency
-    MIN_GRANULARITY = 0.75  #minimal granularity
-    NICE_0_WEIGTH = 1024
-
+    L = 6.0   # scheduler latency (target period)
+    MIN_GRANULARITY = 0.75  # minimal granularity
+    NICE_0_WEIGHT = 1024
 
     def calc_cur_time_slice(self, rqueue: runqueue.Runqueue, task: task.Task) -> float:
-        """Calculate the time slice for a task in the runqueue."""
+        """Calculate the time slice for a task."""
 
-        tot_weight = rqueue.get_total_weight_from_queue()
-        slice = self.L*task.get_task_weight()/tot_weight
-        return slice
+        queue_weight = rqueue.get_total_weight_from_queue()
+        current_weight = task.get_task_weight()
+        
+        # If task is already in the queue, don't add its weight again
+        if task in rqueue.tasks:
+            total_active_weight = queue_weight
+        else:
+            total_active_weight = queue_weight + current_weight
 
-    def update_vruntime(self, rqueue: runqueue.Runqueue) -> None:
-        """Update the vruntime of each task in the runqueue."""
+        if total_active_weight == 0: #to avoid dividing by 0
+            return self.L
 
-        for t in rqueue.tasks:
-            t.vruntime = max(self.MIN_GRANULARITY, t.exec_time*self.NICE_0_WEIGTH/t.get_task_weight())
+        slice_val = self.L * (current_weight / total_active_weight)
+        return max(slice_val, self.MIN_GRANULARITY)
 
+    def update_vruntime(self, current_task: task.Task, actual_duration: float) -> None:
+        """Update the vruntime based on actual execution time."""
+        
+        weight_factor = self.NICE_0_WEIGHT / current_task.get_task_weight()
+        current_task.vruntime += actual_duration * weight_factor
