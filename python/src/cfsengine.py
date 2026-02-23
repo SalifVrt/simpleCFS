@@ -83,6 +83,10 @@ class CFSEngine:
                     self.current_task.time_left_cur_burst -= self.allocated_cpu_time
                     self.logic.update_vruntime(self.current_task, self.allocated_cpu_time)
 
+                    #for gantt chart
+                    start_t = self.time - self.allocated_cpu_time
+                    self.logger.record_gantt_entry(self.current_task.id, start_t, self.time)
+
                     if self.current_task.time_left_cur_burst <= 0:
                         #if the burst is finished
                         self.current_task.current_burst += 1

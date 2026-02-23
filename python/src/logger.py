@@ -6,7 +6,56 @@ from . import task
 class CFSLogger:
     def __init__(self, output_file=None):
         self.history = []
+        self.gantt_data = []
         self.output_file = output_file
+
+    def record_gantt_entry(self, task_id, start_time, end_time):
+        """Records a CPU burst for the Gantt chart."""
+        self.gantt_data.append((task_id, start_time, end_time))
+
+    def print_gantt(self):
+        """Prints a visual ASCII Gantt chart."""
+        self._write("\n" + "="*100)
+        self._write(f"{'GANTT CHART':^100}")
+        self._write("="*100 + "\n")
+
+        if not self.gantt_data:
+            self._write("No data.")
+            return
+
+        #config
+        self.gantt_data.sort(key=lambda x: x[1])
+        total_time = max(self.gantt_data[-1][2], 1.0)
+        width = 80
+        
+        task_ids = sorted(list(set(x[0] for x in self.gantt_data)))
+
+        for tid in task_ids:
+            line_buffer = [" "] * width
+            
+            for task_id, start, end in self.gantt_data:
+                if task_id == tid: #time to index conversion
+                    start_idx = int((start / total_time) * width)
+                    end_idx = int((end / total_time) * width)
+                    
+                    #at least 1 char if the task exists
+                    if end_idx <= start_idx: end_idx = start_idx + 1
+                    if end_idx > width: end_idx = width
+                    
+                    #filling with █
+                    for i in range(start_idx, end_idx):
+                        if i < width:
+                            line_buffer[i] = "█" 
+
+            #line print
+            line_str = "".join(line_buffer)
+            self._write(f"Task {tid:<2} |{line_str}|")
+
+        #common tmp scale
+        self._write(" " * 8 + "+" + "-"*width + "+")
+        ruler = f"Time    0{' ' * (width - 8)}{total_time:.2f} ms"
+        self._write(ruler)
+        self._write("="*100)
 
     def log_event(self, time: float, event_type: str, task: typing.Optional[task.Task] = None, message: str = ""):
         """Save and show a system event."""
@@ -32,9 +81,9 @@ class CFSLogger:
 
     def print_summary(self, tasks):
         """Shows the simulation summary with metrics."""
-        self._write("\n" + "="*85)
-        self._write(f"{'SIMULATION FINISHED - STATS':^85}")
-        self._write("="*85)
+        self._write("\n" + "="*100)
+        self._write(f"{'SIMULATION FINISHED - STATS':^100}")
+        self._write("="*100)
 
         header = f"| {'ID':<4} | {'Arrival':<7} | {'End':<9} | {'Response Time':<9} | {'Turnaround':<9} | {'Waiting':<9} | {'CPU Tot':<7} | {'IO Tot':<7} |"
         self._write(header)
@@ -70,7 +119,7 @@ class CFSLogger:
             line = f"| {t.id:<4} | {t.arrival_time:<7.2f} | {t.end_time:<9.2f} | {response_time:<13.2f} | {turnaround:<10.2f} | {waiting:<9.2f} | {cpu_needed:<7.2f} | {io_needed:<7.2f} |"
             self._write(line)
 
-        self._write("-" * 85)
+        self._write("-" * 100)
 
         #average
         n = len(tasks)
@@ -84,4 +133,4 @@ class CFSLogger:
         self._write(f"Average Turnaround : {avg_turnaround:.2f} ms")
         self._write(f"Average Waiting Time   : {avg_waiting:.2f} ms")
         self._write(f"Average CPU Use  : {cpu_utilization:.2f} %")
-        self._write("="*85)
+        self._write("="*100)

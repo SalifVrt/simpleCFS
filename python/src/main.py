@@ -39,6 +39,8 @@ def main():
 
     #summary
     sim_logger.print_summary(tasks)
+    sim_logger.print_gantt()
+
 
 if __name__ == "__main__":
     main()
