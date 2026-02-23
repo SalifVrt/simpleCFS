@@ -196,110 +196,309 @@ class TestCFSLoggerHistory:
 class TestCFSLoggerWrite:
     """Tests for CFSLogger._write() method"""
     
-    @patch('builtins.print')
-    def test_write_called_with_log_message(self, mock_print):
-        """Test that _write() is called with the log message"""
+    def test_write_to_console_when_no_output_file(self, capsys):
+        """Test that _write() prints to console when output_file is None"""
         log = logger.CFSLogger()
         message = "Test log message"
         
         log._write(message)
         
-        # _write should handle the message (currently it passes)
-        # This test verifies the method can be called without errors
-        assert True
+        captured = capsys.readouterr()
+        assert message in captured.out
     
-    def test_write_with_empty_message(self):
-        """Test that _write() handles empty message"""
+    def test_write_multiple_messages_to_console(self, capsys):
+        """Test that multiple _write() calls print to console"""
         log = logger.CFSLogger()
+        messages = ["Message 1", "Message 2", "Message 3"]
         
-        # Should not raise any exception
-        log._write("")
+        for msg in messages:
+            log._write(msg)
         
-        assert True
+        captured = capsys.readouterr()
+        for msg in messages:
+            assert msg in captured.out
     
-    def test_write_with_special_characters(self):
-        """Test that _write() handles special characters"""
-        log = logger.CFSLogger()
-        message = "Special chars: @#$%^&*()"
+    def test_write_to_file_when_output_file_set(self, tmp_path):
+        """Test that _write() writes to file when output_file is set"""
+        output_file = tmp_path / "test_log.txt"
+        log = logger.CFSLogger(output_file=str(output_file))
         
-        # Should not raise any exception
+        message = "Test message to file"
         log._write(message)
         
-        assert True
+        # Read the file and verify content
+        with open(output_file, 'r') as f:
+            content = f.read()
+        
+        assert message in content
+        assert "\n" in content  # Should have newline
+    
+    def test_write_appends_to_file(self, tmp_path):
+        """Test that _write() appends to file instead of overwriting"""
+        output_file = tmp_path / "test_log.txt"
+        log = logger.CFSLogger(output_file=str(output_file))
+        
+        messages = ["First message", "Second message", "Third message"]
+        
+        for msg in messages:
+            log._write(msg)
+        
+        with open(output_file, 'r') as f:
+            content = f.read()
+        
+        # All messages should be present
+        for msg in messages:
+            assert msg in content
+        
+        # Count occurrences
+        lines = content.strip().split('\n')
+        assert len(lines) == 3
+    
+    def test_write_adds_newline(self, tmp_path):
+        """Test that _write() adds newline to each message"""
+        output_file = tmp_path / "test_log.txt"
+        log = logger.CFSLogger(output_file=str(output_file))
+        
+        log._write("Message 1")
+        log._write("Message 2")
+        
+        with open(output_file, 'r') as f:
+            lines = f.readlines()
+        
+        # Each message should have newline
+        assert len(lines) == 2
+        assert lines[0].endswith("\n")
+        assert lines[1].endswith("\n")
+    
+    def test_write_with_empty_message_to_console(self, capsys):
+        """Test that _write() handles empty message"""
+        log = logger.CFSLogger()
+        log._write("")
+        
+        captured = capsys.readouterr()
+        # Should print just a newline
+        assert captured.out == "\n"
+    
+    def test_write_with_special_characters(self, tmp_path):
+        """Test that _write() preserves special characters"""
+        output_file = tmp_path / "test_log.txt"
+        log = logger.CFSLogger(output_file=str(output_file))
+        
+        message = "Special chars: @#$%^&*()_+-=[]{}|;:,.<>?"
+        log._write(message)
+        
+        with open(output_file, 'r') as f:
+            content = f.read()
+        
+        assert message in content
+    
+    def test_write_with_unicode_characters(self, tmp_path):
+        """Test that _write() handles unicode characters"""
+        output_file = tmp_path / "test_log.txt"
+        log = logger.CFSLogger(output_file=str(output_file))
+        
+        message = "Unicode test: ñ é ü 中文 🎉"
+        log._write(message)
+        
+        with open(output_file, 'r') as f:
+            content = f.read()
+        
+        assert message in content
+    
+    def test_write_creates_file_if_not_exists(self, tmp_path):
+        """Test that _write() creates output file if it doesn't exist"""
+        output_file = tmp_path / "new_log.txt"
+        
+        # File should not exist yet
+        assert not output_file.exists()
+        
+        log = logger.CFSLogger(output_file=str(output_file))
+        log._write("Creating file")
+        
+        # File should now exist
+        assert output_file.exists()
+    
+    def test_write_console_vs_file_behavior(self, capsys, tmp_path):
+        """Test different behavior between console and file output"""
+        # Console output
+        console_log = logger.CFSLogger()
+        console_log._write("Console message")
+        captured = capsys.readouterr()
+        assert "Console message" in captured.out
+        
+        # File output
+        output_file = tmp_path / "file_log.txt"
+        file_log = logger.CFSLogger(output_file=str(output_file))
+        file_log._write("File message")
+        captured = capsys.readouterr()
+        assert "File message" not in captured.out
+        
+        with open(output_file, 'r') as f:
+            assert "File message" in f.read()
 
 
-class TestCFSLoggerIntegration:
-    """Integration tests for CFSLogger"""
+class TestCFSLoggerPrintSummary:
+    """Tests for CFSLogger.print_summary() method"""
     
-    def test_logger_workflow_simple(self):
-        """Test a simple logging workflow"""
+    def test_print_summary_with_empty_tasks(self, capsys):
+        """Test print_summary() with empty task list"""
         log = logger.CFSLogger()
         
-        log.log_event(0.0, "start", message="System started")
+        log.print_summary([])
         
-        t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
-        log.log_event(1.0, "schedule", t1, "Task1 scheduled")
-        
-        t2 = task.Task("Task2", 2.0, 0, [("CPU", 3)])
-        log.log_event(2.0, "schedule", t2, "Task2 scheduled")
-        
-        log.log_event(5.0, "end", message="All tasks completed")
-        
-        assert len(log.history) == 4
-        assert "start" in log.history[0]
-        assert "Task1" in log.history[1]
-        assert "Task2" in log.history[2]
-        assert "end" in log.history[3]
+        captured = capsys.readouterr()
+        assert "SIMULATION TERMINEE" in captured.out or "STATISTIQUES" in captured.out
     
-    def test_logger_with_multiple_tasks(self):
-        """Test logging with multiple different tasks"""
+    def test_print_summary_with_single_task(self, capsys):
+        """Test print_summary() with single task"""
         log = logger.CFSLogger()
+        tasks = [task.Task("Task1", 0.0, 0, [("CPU", 5)])]
         
-        for i in range(5):
-            task_id = f"Task{i}"
-            t = task.Task(task_id, float(i), i-2, [("CPU", i+1)])
-            log.log_event(float(i), "create", t)
+        log.print_summary(tasks)
         
-        assert len(log.history) == 5
-        
-        for i in range(5):
-            assert f"Task{i}" in log.history[i]
+        captured = capsys.readouterr()
+        assert "SIMULATION TERMINEE" in captured.out or "STATISTIQUES" in captured.out
     
-    def test_logger_with_various_event_sequences(self):
-        """Test logging realistic event sequences"""
+    def test_print_summary_with_multiple_tasks(self, capsys):
+        """Test print_summary() with multiple tasks"""
         log = logger.CFSLogger()
-        
-        # Simulate a simple scheduling scenario
-        events = [
-            (0.0, "init", None, "Initialization"),
-            (1.0, "schedule", "T1", "Task T1 goes on CPU"),
-            (3.5, "preempt", "T1", "Task T1 preempted"),
-            (3.5, "schedule", "T2", "Task T2 goes on CPU"),
-            (7.0, "deschedule", "T2", "Task T2 descheduled"),
-            (10.0, "end", None, "Simulation ended"),
+        tasks = [
+            task.Task("Task1", 0.0, 0, [("CPU", 5)]),
+            task.Task("Task2", 1.0, -2, [("CPU", 3)]),
+            task.Task("Task3", 2.0, 2, [("CPU", 4)])
         ]
         
-        for time, event_type, task_id, message in events:
-            if task_id:
-                t = task.Task(task_id, time, 0, [("CPU", 1)])
-                log.log_event(time, event_type, t, message)
-            else:
-                log.log_event(time, event_type, message=message)
+        log.print_summary(tasks)
         
-        assert len(log.history) == len(events)
+        captured = capsys.readouterr()
+        output = captured.out
+        assert "SIMULATION TERMINEE" in output or "STATISTIQUES" in output
+        assert "=" in output  # Should have separator line
     
-    def test_logger_event_formatting_consistency(self):
-        """Test that event formatting is consistent"""
+    def test_print_summary_writes_separator(self, capsys):
+        """Test that print_summary() includes separator"""
         log = logger.CFSLogger()
-        t = task.Task("Task1", 0.0, 0, [("CPU", 1)])
-        t.vruntime = 5.0
+        tasks = []
         
-        log.log_event(1.0, "test", t, "Test message")
+        log.print_summary(tasks)
         
-        log_line = log.history[0]
+        captured = capsys.readouterr()
+        # Should have at least one line with '=' characters
+        assert "=" in captured.out
+    
+    def test_print_summary_includes_header(self, capsys):
+        """Test that print_summary() includes header text"""
+        log = logger.CFSLogger()
+        tasks = []
         
-        # Check format: [time] event_type |Task info| | message
-        assert log_line.startswith("[")
-        assert "ms]" in log_line
-        assert "|" in log_line
+        log.print_summary(tasks)
+        
+        captured = capsys.readouterr()
+        output = captured.out.upper()
+        assert "SIMULATION" in output or "STATISTIQUES" in output
+    
+    def test_print_summary_to_file(self, tmp_path):
+        """Test that print_summary() writes to file when configured"""
+        output_file = tmp_path / "summary_log.txt"
+        log = logger.CFSLogger(output_file=str(output_file))
+        tasks = [task.Task("Task1", 0.0, 0, [("CPU", 1)])]
+        
+        log.print_summary(tasks)
+        
+        with open(output_file, 'r') as f:
+            content = f.read()
+        
+        assert "SIMULATION TERMINEE" in content or "STATISTIQUES" in content
+    
+    def test_print_summary_to_console(self, capsys):
+        """Test that print_summary() prints to console when no file"""
+        log = logger.CFSLogger()
+        tasks = [task.Task("T1", 0.0, 0, [("CPU", 1)])]
+        
+        log.print_summary(tasks)
+        
+        captured = capsys.readouterr()
+        assert len(captured.out) > 0
+        assert "=" in captured.out
+    
+    def test_print_summary_formatting(self, capsys):
+        """Test that print_summary() has consistent formatting"""
+        log = logger.CFSLogger()
+        tasks = []
+        
+        log.print_summary(tasks)
+        
+        captured = capsys.readouterr()
+        lines = captured.out.strip().split('\n')
+        
+        # Should have at least 3 lines (separator, header, separator)
+        assert len(lines) >= 3
+    
+    def test_print_summary_preserves_task_list(self):
+        """Test that print_summary() doesn't modify input task list"""
+        log = logger.CFSLogger()
+        tasks = [
+            task.Task("Task1", 0.0, 0, [("CPU", 5)]),
+            task.Task("Task2", 1.0, 0, [("CPU", 3)])
+        ]
+        original_len = len(tasks)
+        
+        log.print_summary(tasks)
+        
+        assert len(tasks) == original_len
+
+
+class TestCFSLoggerIntegrationWrite:
+    """Integration tests for _write() and print_summary() together"""
+    
+    def test_log_event_and_summary_to_file(self, tmp_path):
+        """Test logging events and then printing summary to file"""
+        output_file = tmp_path / "full_log.txt"
+        log = logger.CFSLogger(output_file=str(output_file))
+        
+        t1 = task.Task("Task1", 0.0, 0, [("CPU", 5)])
+        log.log_event(0.0, "start", message="Starting simulation")
+        log.log_event(1.0, "schedule", t1, "Task1 scheduled")
+        
+        tasks = [t1]
+        log.print_summary(tasks)
+        
+        with open(output_file, 'r') as f:
+            content = f.read()
+        
+        assert "start" in content
+        assert "schedule" in content
+        assert "SIMULATION TERMINEE" in content or "STATISTIQUES" in content
+    
+    def test_multiple_write_calls_maintain_order(self, tmp_path):
+        """Test that multiple _write() calls maintain order in file"""
+        output_file = tmp_path / "ordered_log.txt"
+        log = logger.CFSLogger(output_file=str(output_file))
+        
+        messages = [f"Line {i}" for i in range(10)]
+        
+        for msg in messages:
+            log._write(msg)
+        
+        with open(output_file, 'r') as f:
+            lines = f.readlines()
+        
+        # Verify order
+        for i, expected in enumerate(messages):
+            assert expected in lines[i]
+    
+    def test_write_and_print_summary_interaction(self, capsys):
+        """Test interaction between _write() and print_summary()"""
+        log = logger.CFSLogger()
+        
+        log._write("Initial message")
+        t = task.Task("T1", 0.0, 0, [("CPU", 1)])
+        log.print_summary([t])
+        
+        captured = capsys.readouterr()
+        output = captured.out
+        
+        assert "Initial message" in output
+        assert "SIMULATION" in output or "STATISTIQUES" in output
+        assert "=" in output
 
